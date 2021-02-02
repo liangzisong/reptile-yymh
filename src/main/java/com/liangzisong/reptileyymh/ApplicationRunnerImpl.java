@@ -31,7 +31,7 @@ public class ApplicationRunnerImpl implements ApplicationRunner {
         ExecutorService fixedThreadPool = Executors.newFixedThreadPool(15);
         ExecutorService bookFixedThreadPool = Executors.newFixedThreadPool(15);
         ExecutorService coverFixedThreadPool = Executors.newFixedThreadPool(15);
-        String booksStr = OkHttpUtil.postJsonParams("https://m.yymh8807.com/query/books?type=cartoon&ranking=wjb&paged=true&size=50&page=1", "");
+        String booksStr = OkHttpUtil.postJsonParams("https://m.yymh8807.com/query/books?type=cartoon&ranking=wjb&paged=true&size=15&page=2", "");
         JSONArray bootsListJa = JSON.parseObject(booksStr).getJSONObject("content").getJSONArray("list");
         File errUrlFile = new File("/media/liangzisong/liang/tmp/err.url");
         if (errUrlFile.exists()) {
@@ -52,14 +52,18 @@ public class ApplicationRunnerImpl implements ApplicationRunner {
                 String coverUrl = bootsListJo.getString("coverUrl");
                 if (StringUtils.isNotBlank(coverUrl)) {
                     coverFixedThreadPool.execute(() -> {
+                        log.info("xieru-cover");
                         OkHttpUtil.dowloadImage(coverUrl, pathName, "cover.", outputStream);
+                        log.info("xieru-cover-ok");
                     });
                 }
 
                 String extensionUrl = bootsListJo.getString("extensionUrl");
                 if (StringUtils.isNotBlank(extensionUrl)) {
                     coverFixedThreadPool.execute(() -> {
+                        log.info("xieru-extension");
                         OkHttpUtil.dowloadImage(extensionUrl, pathName, "extension.", outputStream);
+                        log.info("xieru-extension-ok");
                     });
                 }
 
@@ -87,7 +91,9 @@ public class ApplicationRunnerImpl implements ApplicationRunner {
 //                    String finalPathName = pathName +File.separator+ bookJo.getString("title");
                         int finalI = i;
                         fixedThreadPool.execute(() -> {
+                            log.info("xieru-image");
                             OkHttpUtil.dowloadImage(url, pathName, finalI + ".", outputStream);
+                            log.info("xieru-image-ok");
                         });
                     }
 
