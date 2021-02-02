@@ -1,135 +1,71 @@
 package com.liangzisong.reptileyymh.config;
-import java.util.Iterator;
-import java.util.Map;
-import okhttp3.FormBody;
-import okhttp3.MediaType;
+
+import java.security.KeyManagementException;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
+import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
+import java.util.concurrent.TimeUnit;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSocketFactory;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
+import okhttp3.ConnectionPool;
 import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.RequestBody;
-import okhttp3.Response;
-import org.apache.commons.lang3.exception.ExceptionUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 
 /**
- * Created by qhong on 2018/7/3 16:55
+ * Created by qhong on 2018/7/3 16:52
  **/
-public class OkHttpUtil{
+@Configuration
+public class OkHttpConfig {
 
-
-    private static final Logger logger = LoggerFactory.getLogger(OkHttpUtil.class);
-
-    /**
-     * 根据map获取get请求参数
-     * @param queries
-     * @return
-     */
-    public static StringBuffer getQueryString(String url,Map<String,String> queries){
-        StringBuffer sb = new StringBuffer(url);
-        if (queries != null && queries.keySet().size() > 0) {
-            boolean firstFlag = true;
-            Iterator iterator = queries.entrySet().iterator();
-            while (iterator.hasNext()) {
-                Map.Entry entry = (Map.Entry<String, String>) iterator.next();
-                if (firstFlag) {
-                    sb.append("?" + entry.getKey() + "=" + entry.getValue());
-                    firstFlag = false;
-                } else {
-                    sb.append("&" + entry.getKey() + "=" + entry.getValue());
-                }
+    @Bean
+    public X509TrustManager x509TrustManager() {
+        return new X509TrustManager() {
+            @Override
+            public void checkClientTrusted(X509Certificate[] x509Certificates, String s) throws CertificateException {
             }
-        }
-        return sb;
+            @Override
+            public void checkServerTrusted(X509Certificate[] x509Certificates, String s) throws CertificateException {
+            }
+            @Override
+            public X509Certificate[] getAcceptedIssuers() {
+                return new X509Certificate[0];
+            }
+        };
     }
-
-    /**
-     * 调用okhttp的newCall方法
-     * @param request
-     * @return
-     */
-    private static String execNewCall(Request request){
-        Response response = null;
+    @Bean
+    public SSLSocketFactory sslSocketFactory() {
         try {
-            OkHttpClient okHttpClient = SpringUtils.getBean(OkHttpClient.class);
-            response = okHttpClient.newCall(request).execute();
-            int status = response.code();
-            if (response.isSuccessful()) {
-                return response.body().string();
-            }
-        } catch (Exception e) {
-            logger.error("okhttp3 put error >> ex = {}", ExceptionUtils.getStackTrace(e));
-        } finally {
-            if (response != null) {
-                response.close();
-            }
+            //信任任何链接
+            SSLContext sslContext = SSLContext.getInstance("TLS");
+            sslContext.init(null, new TrustManager[]{x509TrustManager()}, new SecureRandom());
+            return sslContext.getSocketFactory();
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+        } catch (KeyManagementException e) {
+            e.printStackTrace();
         }
-        return "";
+        return null;
     }
-
     /**
-     * get
-     * @param url     请求的url
-     * @param queries 请求的参数，在浏览器？后面的数据，没有可以传null
-     * @return
+     * Create a new connection pool with tuning parameters appropriate for a single-user application.
+     * The tuning parameters in this pool are subject to change in future OkHttp releases. Currently
      */
-    public static String get(String url, Map<String, String> queries) {
-        StringBuffer sb = getQueryString(url,queries);
-        Request request = new Request.Builder()
-                .url(sb.toString())
-                .build();
-        return execNewCall(request);
+    @Bean
+    public ConnectionPool pool() {
+        return new ConnectionPool(200, 5, TimeUnit.MINUTES);
     }
-
-    /**
-     * post
-     *
-     * @param url    请求的url
-     * @param params post form 提交的参数
-     * @return
-     */
-    public static String postFormParams(String url, Map<String, String> params) {
-        FormBody.Builder builder = new FormBody.Builder();
-        //添加参数
-        if (params != null && params.keySet().size() > 0) {
-            for (String key : params.keySet()) {
-                builder.add(key, params.get(key));
-            }
-        }
-        Request request = new Request.Builder()
-                .url(url)
-                .post(builder.build())
+    @Bean
+    public OkHttpClient okHttpClient() {
+        return new OkHttpClient.Builder()
+                .sslSocketFactory(sslSocketFactory(), x509TrustManager())
+                .retryOnConnectionFailure(false)//是否开启缓存
+                .connectionPool(pool())//连接池
+                .connectTimeout(10L, TimeUnit.SECONDS)
+                .readTimeout(10L, TimeUnit.SECONDS)
                 .build();
-        return execNewCall(request);
-    }
-
-
-    /**
-     * Post请求发送JSON数据....{"name":"zhangsan","pwd":"123456"}
-     * 参数一：请求Url
-     * 参数二：请求的JSON
-     * 参数三：请求回调
-     */
-    public static String postJsonParams(String url, String jsonParams) {
-        RequestBody requestBody = RequestBody.create(MediaType.parse("application/json; charset=utf-8"), jsonParams);
-        Request request = new Request.Builder()
-                .url(url)
-                .post(requestBody)
-                .build();
-        return execNewCall(request);
-    }
-
-    /**
-     * Post请求发送xml数据....
-     * 参数一：请求Url
-     * 参数二：请求的xmlString
-     * 参数三：请求回调
-     */
-    public static String postXmlParams(String url, String xml) {
-        RequestBody requestBody = RequestBody.create(MediaType.parse("application/xml; charset=utf-8"), xml);
-        Request request = new Request.Builder()
-                .url(url)
-                .post(requestBody)
-                .build();
-        return execNewCall(request);
     }
 }
