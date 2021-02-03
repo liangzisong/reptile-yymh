@@ -31,9 +31,12 @@ public class ApplicationRunnerImpl implements ApplicationRunner {
         ExecutorService fixedThreadPool = Executors.newFixedThreadPool(15);
         ExecutorService bookFixedThreadPool = Executors.newFixedThreadPool(15);
         ExecutorService coverFixedThreadPool = Executors.newFixedThreadPool(15);
-        String booksStr = OkHttpUtil.postJsonParams("https://m.yymh8807.com/query/books?type=cartoon&ranking=wjb&paged=true&size=15&page=2", "");
+        int page = 6;
+        int size = 15;
+        String path = "/home/liangzisong/aa/";
+        String booksStr = OkHttpUtil.postJsonParams("https://m.yymh8807.com/query/books?type=cartoon&paged=true&size="+size+"&page="+page+"&category=&filter=finish", "");
         JSONArray bootsListJa = JSON.parseObject(booksStr).getJSONObject("content").getJSONArray("list");
-        File errUrlFile = new File("/media/liangzisong/liang/tmp/err.url");
+        File errUrlFile = new File(path+"/err.url");
         if (errUrlFile.exists()) {
             errUrlFile.delete();
         }
@@ -44,7 +47,7 @@ public class ApplicationRunnerImpl implements ApplicationRunner {
                 JSONObject bootsListJo = (JSONObject) bootsListOb;
                 String bookId = bootsListJo.getString("id");
                 String name = bootsListJo.getString("name");
-                String pathName = "/media/liangzisong/liang/tmp/" + name;
+                String pathName = path + name;
                 File dir = new File(pathName);
                 if (!dir.isDirectory()) {
                     dir.mkdir();
@@ -53,7 +56,7 @@ public class ApplicationRunnerImpl implements ApplicationRunner {
                 if (StringUtils.isNotBlank(coverUrl)) {
                     coverFixedThreadPool.execute(() -> {
                         log.info("xieru-cover");
-                        OkHttpUtil.dowloadImage(coverUrl, pathName, "cover.", outputStream);
+                        OkHttpUtil.dowloadImage(coverUrl, pathName, "cover.", outputStream,bookId,"");
                         log.info("xieru-cover-ok");
                     });
                 }
@@ -62,7 +65,7 @@ public class ApplicationRunnerImpl implements ApplicationRunner {
                 if (StringUtils.isNotBlank(extensionUrl)) {
                     coverFixedThreadPool.execute(() -> {
                         log.info("xieru-extension");
-                        OkHttpUtil.dowloadImage(extensionUrl, pathName, "extension.", outputStream);
+                        OkHttpUtil.dowloadImage(extensionUrl, pathName, "extension.", outputStream,bookId,"");
                         log.info("xieru-extension-ok");
                     });
                 }
@@ -92,11 +95,11 @@ public class ApplicationRunnerImpl implements ApplicationRunner {
                         int finalI = i;
                         fixedThreadPool.execute(() -> {
                             log.info("xieru-image");
-                            OkHttpUtil.dowloadImage(url, pathName, finalI + ".", outputStream);
+                            OkHttpUtil.dowloadImage(url, pathName, finalI + ".", outputStream,bookId,bookJo.getString("id"));
                             log.info("xieru-image-ok");
                         });
-                    }
 
+                    }
                 }
             });
 

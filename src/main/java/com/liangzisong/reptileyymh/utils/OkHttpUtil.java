@@ -192,18 +192,19 @@ public class OkHttpUtil {
     }
 
     public static void main(String[] args) {
-        dowloadImage("https://image2.dayi58.com/04c4a04ace0b65c011b6ece3ece82bdb/601767e8/b1507/c233405/6a4b5d38-b776-49a0-9944-196b0724e452.png"
-                , "/media/liangzisong/liang/Adobe/", "aa.", null);
+//        dowloadImage("https://image2.dayi58.com/04c4a04ace0b65c011b6ece3ece82bdb/601767e8/b1507/c233405/6a4b5d38-b776-49a0-9944-196b0724e452.png"
+//                , "/media/liangzisong/liang/Adobe/", "aa.", null);
     }
 
-    public static void dowloadImage(String urlStr, String filePath, String name,FileOutputStream outputStream) {
+    public static void dowloadImage(String urlStr, String filePath, String name
+            ,FileOutputStream outputStream,String bookId,String chapterId) {
         URL url = null;
         try {
             url = new URL(urlStr);
         } catch (MalformedURLException e) {
             if (outputStream != null) {
                 try {
-                    outputStream.write((urlStr+"\r\n").getBytes(StandardCharsets.UTF_8));
+                    outputStream.write((urlStr+"=>bookId["+"]"+"chapterId=>["+"]"+"\r\n").getBytes(StandardCharsets.UTF_8));
                 } catch (IOException ioException) {
                     ioException.printStackTrace();
                 }finally {
